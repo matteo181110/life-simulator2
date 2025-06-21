@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Life Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      color: #222;
+      margin: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    input, select, button {
+      font-size: 16px;
+      padding: 8px;
+      margin-top: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: white;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    ul li {
+      margin-bottom: 8px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Life Simulator</h1>
+  <div id="game-container"></div>
+
+  <script>
+    let state = {
+      name: "",
+      birthYear: 2000,
+      school: "",
+      age: 0,
+      money: 500,
+      health: 100,
+      career: "",
+      children: 0,
+      isDead: false,
+      generation: 1,
+      log: [],
+    };
+
+    const container = document.getElementById("game-container");
+
+    function askName() {
+      container.innerHTML = \`
+        <h2>What's your name?</h2>
+        <input type="text" id="name-input" />
+        <button onclick="saveName()">Next</button>
+      \`;
+    }
+
+    function saveName() {
+      const name = document.getElementById("name-input").value.trim();
+      if (!name) {
+        alert("Please enter your name.");
+        return;
+      }
+      state.name = name;
+      askBirthYear();
+    }
+
+    function askBirthYear() {
+      container.innerHTML = \`
+        <h2>When were you born?</h2>
+        <input type="number" id="birth-year" placeholder="e.g. 2010" min="1900" max="2025" />
+        <button onclick="saveBirthYear()">Next</button>
+      \`;
+    }
+
+    function saveBirthYear() {
+      const year = parseInt(document.getElementById("birth-year").value);
+      if (!year || year < 1900 || year > 2025) {
+        alert("Please enter a valid year between 1900 and 2025.");
+        return;
+      }
+      state.birthYear = year;
+      askSchool();
+    }
+
+    function askSchool() {
+      container.innerHTML = \`
+        <h2>Which type of school do you choose?</h2>
+        <select id="school-select">
+          <option value="Art">Art School</option>
+          <option value="Science">Science High School</option>
+          <option value="Technical">Technical Institute</option>
+          <option value="Dropout">I drop out</option>
+        </select>
+        <button onclick="startLife()">Start Life</button>
+      \`;
+    }
+
+    function startLife() {
+      state.school = document.getElementById("school-select").value;
+      state.age = 0;
+      state.money = 500;
+      state.health = 100;
+      state.career = "";
+      state.children = 0;
+      state.isDead = false;
+      state.log = [];
+      state.log.push(\`🧬 Generation \${state.generation} — You were born in \${state.birthYear} and chose \${state.school}.\`);
+      nextEvent();
+    }
+
+    function nextEvent() {
+      if (state.isDead) return;
+
+      state.age += 1;
+      const year = state.birthYear + state.age;
+
+      // Health decreases slightly each year, random events affect it too
+      state.health -= Math.floor(Math.random() * 10);
+      // Money changes randomly, sometimes positive sometimes negative
+      state.money += Math.floor(Math.random() * 200 - 100);
+
+      let event = "";
+
+      if (state.age === 18) {
+        if (state.school !== "Dropout") {
+          state.career = chooseCareer(state.school);
+          event += \`You started a career as \${state.career}. \`;
+        } else {
+          state.career = "Unemployed";
+          event += "You did not start a career. ";
+        }
+      }
+
+      // 20% chance of random event each year
+      if (Math.random() < 0.2) {
+        event += handleRandomEvent();
+      }
+
+      if (state.health <= 0 || state.age > 90) {
+        dieAndContinue();
+        return;
+      }
+
+      state.log.push(\`📅 Age \${state.age} (\${year}): \${event || "Nothing special happened."}\`);
+      render();
+    }
+
+    function chooseCareer(school) {
+      const careers = {
+        Art: ["Painter", "Musician", "Designer"],
+        Science: ["Engineer", "Doctor", "Programmer"],
+        Technical: ["Mechanic", "Technician", "Electrician"],
+      };
+      const list = careers[school] || ["Unemployed"];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function handleRandomEvent() {
+      const events = [
+        { text: "You broke your leg playing football. -15 health", health: -15 },
+        { text: "You found €200 on the street!", money: 200 },
+        { text: "You got scammed. -€100", money: -100 },
+        { text: "You got very sick. -30 health", health: -30 },
+        { text: "You had a child!", children: 1 },
+      ];
+      const e = events[Math.floor(Math.random() * events.length)];
+      if (e.health) state.health += e.health;
+      if (e.money) state.money += e.money;
+      if (e.children) state.children += e.children;
+      return \`⚠️ \${e.text}\`;
+    }
+
+    function dieAndContinue() {
+      state.isDead = true;
+      state.log.push(\`☠️ \${state.name} died at age \${state.age}.\`);
+      if (state.children > 0) {
+        // New generation: child inherits life, starts fresh
+        const newName = state.name + " Jr.";
+        state = {
+          name: newName,
+          birthYear: state.birthYear + state.age,
+          school: "",
+          age: 0,
+          money: 500,
+          health: 100,
+          career: "",
+          children: 0,
+          isDead: false,
+          generation: state.generation + 1,
+          log: [\`🧬 Generation \${state.generation + 1} — \${newName} is born.\`],
+        };
+        askSchool();
+      } else {
+        state.log.push("💀 No children to continue your legacy.");
+        render(true);
+      }
+    }
+
+    function render(end = false) {
+      const stats = \`
+        <p><strong>Age:</strong> \${state.age}</p>
+        <p><strong>Money:</strong> €\${state.money}</p>
+        <p><strong>Health:</strong> \${state.health}</p>
+        <p><strong>Career:</strong> \${state.career || "None"}</p>
+        <p><strong>Children:</strong> \${state.children}</p>
+      \`;
+
+      const logHtml = state.log.map(e => \`<li>\${e}</li>\`).join("");
+      const log = \`<ul>\${logHtml}</ul>\`;
+
+      container.innerHTML = \`
+        <h2>\${state.name}'s Life</h2>
+        \${stats}
+        \${log}
+        \${!end ? '<button onclick="nextEvent()">Next Year</button>' : ""}
+      \`;
+    }
+
+    // Start asking for info when page loads
+    askName();
+  </script>
+</body>
+</html>
