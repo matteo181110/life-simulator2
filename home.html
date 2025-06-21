@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Life Simulator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 2rem;
+    }
+    #game {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .question, .event {
+      margin-bottom: 1.5rem;
+    }
+    .option {
+      display: block;
+      background: #0077cc;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      text-align: left;
+    }
+    .stats {
+      background: #eee;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <h1>Life Simulator</h1>
+    <div class="question" id="question"></div>
+    <div id="options"></div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <script>
+    let state = {
+      age: 0,
+      money: 0,
+      health: 100,
+      career: "Unemployed",
+      generation: 1,
+      alive: true,
+      children: 0
+    };
+
+    function updateStats() {
+      document.getElementById("stats").innerHTML = `
+        👤 Age: ${state.age} | 💰 Money: ${state.money} | ❤️ Health: ${state.health} | 🏢 Career: ${state.career} | 👶 Children: ${state.children} | 🌱 Gen: ${state.generation}
+      `;
+    }
+
+    function askQuestion(question, options) {
+      document.getElementById("question").innerText = question;
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "option";
+        btn.innerText = opt.text;
+        btn.onclick = () => {
+          opt.action();
+          nextStep();
+        };
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    function randomEvent() {
+      const events = [
+        () => {
+          state.health -= 20;
+          alert("😷 You got sick! -20 health.");
+        },
+        () => {
+          const found = Math.floor(Math.random() * 1000);
+          state.money += found;
+          alert(`💸 You found $${found}!`);
+        },
+        () => {
+          state.money -= 200;
+          alert("🚗 Unexpected car repair! -$200.");
+        },
+        () => {
+          if (state.health < 100) {
+            state.health += 10;
+            alert("🏖️ Relaxed at the beach. +10 health.");
+          }
+        }
+      ];
+      const chance = Math.random();
+      if (chance < 0.4) {
+        const event = events[Math.floor(Math.random() * events.length)];
+        event();
+      }
+    }
+
+    function nextStep() {
+      if (!state.alive) {
+        state = {
+          age: 0,
+          money: 0,
+          health: 100,
+          career: "Unemployed",
+          generation: state.generation + 1,
+          alive: true,
+          children: 0
+        };
+        alert("🪦 You died. Now you're playing as your child.");
+        return startLife();
+      }
+
+      state.age++;
+
+      if (state.age === 1) {
+        askQuestion("When will you be born?", [
+          { text: "2000", action: () => {} },
+          { text: "2010", action: () => {} },
+          { text: "2020", action: () => {} }
+        ]);
+      } else if (state.age === 6) {
+        askQuestion("Choose your school:", [
+          { text: "Public", action: () => {} },
+          { text: "Private", action: () => { state.money -= 1000; } }
+        ]);
+      } else if (state.age === 18) {
+        askQuestion("Choose a career:", [
+          { text: "Doctor", action: () => { state.career = "Doctor"; state.money += 10000; } },
+          { text: "Artist", action: () => { state.career = "Artist"; state.money += 3000; } },
+          { text: "Engineer", action: () => { state.career = "Engineer"; state.money += 7000; } }
+        ]);
+      } else if (state.age === 30) {
+        askQuestion("Do you want children?", [
+          { text: "Yes", action: () => { state.children = 1; } },
+          { text: "No", action: () => {} }
+        ]);
+      } else {
+        randomEvent();
+      }
+
+      if (state.health <= 0 || state.age > 80) {
+        state.alive = false;
+      }
+
+      updateStats();
+    }
+
+    function startLife() {
+      updateStats();
+      nextStep();
+    }
+
+    startLife();
+  </script>
+</body>
+</html>
